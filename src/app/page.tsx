@@ -15,7 +15,7 @@ import AuthModal from '@/components/auth/AuthModal';
 import PortfolioAnalytics from '@/components/PortfolioAnalytics';
 import PortfolioComparison from '@/components/PortfolioComparison';
 import AlertSettings, { loadAlertConfig, shouldTriggerAlert } from '@/components/AlertSettings';
-import { LogOut, User } from 'lucide-react';
+import { LogOut, User, Download } from 'lucide-react';
 import { AnalysisSkeleton, ErrorMessage } from '@/components/ui/Skeleton';
 
 /** Rebuild portfolio with live prices and recalculate weights */
@@ -410,7 +410,7 @@ export default function Home() {
               </div>
             </div>
 
-            <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
+            <div className="no-print" style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
               {/* Alert settings */}
               {analysis && (
                 <AlertSettings
@@ -420,6 +420,16 @@ export default function Home() {
                   topSector={`${topSectorEntry[0]} ${(topSectorEntry[1] as number).toFixed(1)}%`}
                 />
               )}
+
+              {/* Export PDF */}
+              <button
+                onClick={() => window.print()}
+                style={{ padding: '0.625rem 1.25rem', background: '#f3f4f6', color: '#374151', border: 'none', borderRadius: '0.5rem', fontWeight: '600', cursor: 'pointer', fontSize: '0.875rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}
+                title="Export as PDF"
+              >
+                <Download size={15} />
+                PDF
+              </button>
 
               {user && (
                 <button
