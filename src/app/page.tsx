@@ -15,6 +15,7 @@ import AuthModal from '@/components/auth/AuthModal';
 import PortfolioAnalytics from '@/components/PortfolioAnalytics';
 import PortfolioComparison from '@/components/PortfolioComparison';
 import WhatIfSimulator from '@/components/WhatIfSimulator';
+import CorrelationMatrix from '@/components/CorrelationMatrix';
 import AlertSettings, { loadAlertConfig, shouldTriggerAlert } from '@/components/AlertSettings';
 import { LogOut, User, Download } from 'lucide-react';
 import { AnalysisSkeleton, ErrorMessage } from '@/components/ui/Skeleton';
@@ -479,6 +480,11 @@ export default function Home() {
             {/* ── Historical Performance + Advanced Metrics ── */}
             <div style={{ marginBottom: '2rem' }}>
               <PortfolioAnalytics portfolio={selectedPortfolio} />
+            </div>
+
+            {/* ── Correlation Matrix ── */}
+            <div style={{ marginBottom: '2rem' }}>
+              <CorrelationMatrix portfolio={selectedPortfolio} />
             </div>
 
             {/* ── What-If Simulator ── */}
