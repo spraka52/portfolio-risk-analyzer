@@ -16,6 +16,7 @@ import PortfolioAnalytics from '@/components/PortfolioAnalytics';
 import PortfolioComparison from '@/components/PortfolioComparison';
 import WhatIfSimulator from '@/components/WhatIfSimulator';
 import CorrelationMatrix from '@/components/CorrelationMatrix';
+import RebalancingSuggestions from '@/components/RebalancingSuggestions';
 import AlertSettings, { loadAlertConfig, shouldTriggerAlert } from '@/components/AlertSettings';
 import { LogOut, User, Download } from 'lucide-react';
 import { AnalysisSkeleton, ErrorMessage } from '@/components/ui/Skeleton';
@@ -480,6 +481,11 @@ export default function Home() {
             {/* ── Historical Performance + Advanced Metrics ── */}
             <div style={{ marginBottom: '2rem' }}>
               <PortfolioAnalytics portfolio={selectedPortfolio} />
+            </div>
+
+            {/* ── Rebalancing Suggestions ── */}
+            <div style={{ marginBottom: '2rem' }}>
+              <RebalancingSuggestions portfolio={selectedPortfolio} metrics={analysis} />
             </div>
 
             {/* ── Correlation Matrix ── */}
