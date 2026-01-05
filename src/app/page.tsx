@@ -18,6 +18,7 @@ import WhatIfSimulator from '@/components/WhatIfSimulator';
 import CorrelationMatrix from '@/components/CorrelationMatrix';
 import RebalancingSuggestions from '@/components/RebalancingSuggestions';
 import NewsFeed from '@/components/NewsFeed';
+import PortfolioHistory from '@/components/PortfolioHistory';
 import AlertSettings, { loadAlertConfig, shouldTriggerAlert } from '@/components/AlertSettings';
 import { LogOut, User, Download } from 'lucide-react';
 import { AnalysisSkeleton, ErrorMessage } from '@/components/ui/Skeleton';
@@ -477,6 +478,11 @@ export default function Home() {
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(480px, 1fr))', gap: '2rem', marginBottom: '2rem' }}>
               <RiskSummary metrics={analysis} />
               <SectorBreakdown sectorConcentration={analysis.sectorConcentration} />
+            </div>
+
+            {/* ── Portfolio Value History (localStorage snapshots) ── */}
+            <div style={{ marginBottom: '2rem' }}>
+              <PortfolioHistory portfolio={selectedPortfolio} riskLevel={analysis.riskLevel} />
             </div>
 
             {/* ── Historical Performance + Advanced Metrics ── */}
