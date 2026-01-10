@@ -55,6 +55,8 @@ export default function Home() {
   const [analysisError, setAnalysisError] = useState<string | null>(null);
   // analysisKey increments each time the user triggers a fresh analysis → remounts AINarrative
   const [analysisKey, setAnalysisKey] = useState(0);
+  // Toast shown when an alert email is successfully sent
+  const [alertToast, setAlertToast] = useState<string | null>(null);
 
   const { user, logout } = useAuth();
   const { savePortfolio, updatePortfolio } = usePortfolioAPI();
@@ -72,11 +74,17 @@ export default function Home() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [prices]);
 
-  // Check alert rules after each analysis
+  // Smart alert: only fire when the risk level changes to a new (worse or same) level
+  // compared to what was last alerted for this portfolio.
   useEffect(() => {
     if (!analysis || !selectedPortfolio) return;
     const config = loadAlertConfig();
     if (!config || !shouldTriggerAlert(config, analysis.riskLevel)) return;
+
+    // Check last alerted risk level for this portfolio
+    const alertStateKey = `alert_last_${selectedPortfolio.name}`;
+    const lastAlerted = typeof window !== 'undefined' ? localStorage.getItem(alertStateKey) : null;
+    if (lastAlerted === analysis.riskLevel) return; // Same level — don't spam
 
     const topSectorEntry = Object.entries(analysis.sectorConcentration).reduce(
       (max, e) => (e[1] > max[1] ? e : max),
@@ -94,7 +102,15 @@ export default function Home() {
         diversificationScore: analysis.diversificationScore,
         topSector: `${topSectorEntry[0]} ${(topSectorEntry[1] as number).toFixed(1)}%`,
       }),
-    }).catch(() => {});
+    })
+      .then(r => {
+        if (r.ok) {
+          localStorage.setItem(alertStateKey, analysis.riskLevel);
+          setAlertToast(`Alert sent to ${config.email} — ${analysis.riskLevel} risk detected`);
+          setTimeout(() => setAlertToast(null), 6000);
+        }
+      })
+      .catch(() => {});
   }, [analysisKey]); // Only trigger on fresh analysis, not on live price ticks
 
   const handlePortfolioSelect = useCallback((portfolio: Portfolio) => {
@@ -454,6 +470,25 @@ export default function Home() {
             </div>
           </div>
         </div>
+
+        {/* ── Alert sent toast ── */}
+        {alertToast && (
+          <div className="no-print" style={{
+            marginBottom: '1rem',
+            padding: '0.875rem 1.25rem',
+            background: '#d1fae5',
+            border: '1px solid #6ee7b7',
+            borderRadius: '0.75rem',
+            color: '#065f46',
+            fontSize: '0.875rem',
+            fontWeight: '600',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem',
+          }}>
+            🔔 {alertToast}
+          </div>
+        )}
 
         {analysisError && (
           <div style={{ marginBottom: '2rem' }}>
