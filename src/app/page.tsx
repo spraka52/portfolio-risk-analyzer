@@ -58,8 +58,19 @@ export default function Home() {
   // Toast shown when an alert email is successfully sent
   const [alertToast, setAlertToast] = useState<string | null>(null);
 
+  const [savedPortfoliosList, setSavedPortfoliosList] = useState<any[]>([]);
+
   const { user, logout } = useAuth();
-  const { savePortfolio, updatePortfolio } = usePortfolioAPI();
+  const { savePortfolio, updatePortfolio, getPortfolios } = usePortfolioAPI();
+
+  // Fetch saved portfolios for comparison picker (when logged in)
+  useEffect(() => {
+    if (!user) return;
+    getPortfolios()
+      .then(data => setSavedPortfoliosList(data))
+      .catch(() => {});
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
 
   // Live price polling
   const { prices, lastUpdated, secondsAgo } = useLivePrices(selectedPortfolio);
@@ -547,7 +558,7 @@ export default function Home() {
 
             {/* ── Portfolio Comparison ── */}
             <div style={{ marginBottom: '2rem' }}>
-              <PortfolioComparison portfolio={selectedPortfolio} metrics={analysis} />
+              <PortfolioComparison portfolio={selectedPortfolio} metrics={analysis} savedPortfolios={savedPortfoliosList} />
             </div>
           </>
         )}
