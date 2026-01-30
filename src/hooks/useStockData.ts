@@ -14,39 +14,24 @@ export function useStockData() {
   const fetch = useCallback(async (ticker: string): Promise<StockData | null> => {
     if (!ticker) return null;
 
-    const apiKey = process.env.NEXT_PUBLIC_FINNHUB_API_KEY;
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8081/api';
 
     setLoading(true);
     setError(null);
 
     try {
-      // Get stock quote (price)
-      const quoteResponse = await window.fetch(
-        `https://finnhub.io/api/v1/quote?symbol=${ticker}&token=${apiKey}`
+      const response = await window.fetch(
+        `${apiUrl}/stocks/quote/${ticker}`
       );
-      
-      const quoteData = await quoteResponse.json();
-      
-      if (!quoteData.c || quoteData.c === 0) {
+
+      if (!response.ok) {
         throw new Error('Stock not found');
       }
 
-      // Get company profile (name, sector)
-      const profileResponse = await window.fetch(
-        `https://finnhub.io/api/v1/stock/profile2?symbol=${ticker}&token=${apiKey}`
-      );
+      const data = await response.json();
       
-      const profileData = await profileResponse.json();
-
-      const stockData: StockData = {
-        ticker: ticker.toUpperCase(),
-        name: profileData.name || ticker,
-        price: quoteData.c, // current price
-        sector: profileData.finnhubIndustry || 'Technology',
-      };
-
       setLoading(false);
-      return stockData;
+      return data;
     } catch (err) {
       console.error('Stock fetch error:', err);
       setError('Stock not found');

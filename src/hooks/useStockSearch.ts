@@ -16,27 +16,21 @@ export function useStockSearch() {
       return;
     }
 
-    const apiKey = process.env.NEXT_PUBLIC_FINNHUB_API_KEY;
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8081/api';
 
     setLoading(true);
 
     try {
       const response = await window.fetch(
-        `https://finnhub.io/api/v1/search?q=${encodeURIComponent(query)}&token=${apiKey}`
+        `${apiUrl}/stocks/search?q=${encodeURIComponent(query)}`
       );
 
-      const data = await response.json();
-      
-      const searchResults = (data.result || [])
-        .filter((item: any) => item.type === 'Common Stock' && !item.symbol.includes('.'))
-        .map((item: any) => ({
-          ticker: item.symbol,
-          name: item.description,
-          exchange: item.displaySymbol,
-        }))
-        .slice(0, 5);
+      if (!response.ok) {
+        throw new Error('Search failed');
+      }
 
-      setResults(searchResults);
+      const data = await response.json();
+      setResults(data);
     } catch (error) {
       console.error('Search error:', error);
       setResults([]);

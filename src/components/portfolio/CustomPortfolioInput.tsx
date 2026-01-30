@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Portfolio } from '@/types/portfolio';
 import { HoldingInput, calculatePortfolioValue, convertToPortfolio, validateHoldings } from '@/lib/utils/portfolio';
 import { useStockData } from '@/hooks/useStockData';
@@ -11,9 +11,10 @@ import Input from '@/components/ui/Input';
 interface CustomPortfolioInputProps {
   onAnalyze: (portfolio: Portfolio) => void;
   onCancel: () => void;
+  existingPortfolio?: any; // For editing
 }
 
-export default function CustomPortfolioInput({ onAnalyze, onCancel }: CustomPortfolioInputProps) {
+export default function CustomPortfolioInput({ onAnalyze, onCancel, existingPortfolio }: CustomPortfolioInputProps) {
   const [portfolioName, setPortfolioName] = useState('My Portfolio');
   const [holdings, setHoldings] = useState<(HoldingInput & { loading?: boolean; error?: string })[]>([
     { ticker: '', shares: 0 }
@@ -22,6 +23,21 @@ export default function CustomPortfolioInput({ onAnalyze, onCancel }: CustomPort
 
   const { fetch: fetchStock } = useStockData();
   const { results: searchResults, search, clear: clearSearch } = useStockSearch();
+
+  // Load existing portfolio data if editing
+  useEffect(() => {
+    if (existingPortfolio) {
+      setPortfolioName(existingPortfolio.name);
+      const loadedHoldings = existingPortfolio.holdings.map((h: any) => ({
+        ticker: h.ticker,
+        shares: h.shares,
+        name: h.companyName,
+        price: h.currentPrice,
+        sector: h.sector,
+      }));
+      setHoldings(loadedHoldings.length > 0 ? loadedHoldings : [{ ticker: '', shares: 0 }]);
+    }
+  }, [existingPortfolio]);
 
   const addHolding = () => {
     setHoldings([...holdings, { ticker: '', shares: 0 }]);
@@ -34,7 +50,7 @@ export default function CustomPortfolioInput({ onAnalyze, onCancel }: CustomPort
   const handleTickerChange = (index: number, value: string) => {
     const updated = [...holdings];
     updated[index].ticker = value.toUpperCase();
-    updated[index].error = undefined; // Clear error when typing
+    updated[index].error = undefined;
     setHoldings(updated);
 
     if (value.length >= 1) {
@@ -50,7 +66,7 @@ export default function CustomPortfolioInput({ onAnalyze, onCancel }: CustomPort
     const updated = [...holdings];
     updated[index].ticker = ticker;
     updated[index].loading = true;
-    updated[index].error = undefined; // Clear error before fetching
+    updated[index].error = undefined;
     setHoldings(updated);
     
     clearSearch();
@@ -66,7 +82,7 @@ export default function CustomPortfolioInput({ onAnalyze, onCancel }: CustomPort
         price: data.price,
         sector: data.sector,
         loading: false,
-        error: undefined, // Explicitly clear error on success
+        error: undefined,
       };
     } else {
       newUpdated[index].loading = false;
@@ -85,7 +101,7 @@ export default function CustomPortfolioInput({ onAnalyze, onCancel }: CustomPort
     if (holding.ticker && !holding.sector && !holding.loading) {
       const updated = [...holdings];
       updated[index].loading = true;
-      updated[index].error = undefined; // Clear error before fetching
+      updated[index].error = undefined;
       setHoldings(updated);
       
       const data = await fetchStock(holding.ticker);
@@ -98,7 +114,7 @@ export default function CustomPortfolioInput({ onAnalyze, onCancel }: CustomPort
           price: data.price,
           sector: data.sector,
           loading: false,
-          error: undefined, // Explicitly clear error on success
+          error: undefined,
         };
       } else {
         newUpdated[index].loading = false;
@@ -122,6 +138,12 @@ export default function CustomPortfolioInput({ onAnalyze, onCancel }: CustomPort
     }
 
     const portfolio = convertToPortfolio(portfolioName, holdings);
+    
+    // Pass portfolio ID if editing
+    if (existingPortfolio) {
+      (portfolio as any).id = existingPortfolio.id;
+    }
+    
     onAnalyze(portfolio);
   };
 
@@ -137,7 +159,7 @@ export default function CustomPortfolioInput({ onAnalyze, onCancel }: CustomPort
       boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
     }}>
       <h2 style={{ fontSize: '2rem', fontWeight: '700', marginBottom: '1.5rem', color: '#111827' }}>
-        Create Custom Portfolio
+        {existingPortfolio ? 'Edit Portfolio' : 'Create Custom Portfolio'}
       </h2>
 
       {/* Portfolio Name */}
@@ -228,7 +250,7 @@ export default function CustomPortfolioInput({ onAnalyze, onCancel }: CustomPort
           Cancel
         </Button>
         <Button variant="primary" onClick={handleAnalyze} fullWidth>
-          Analyze Portfolio →
+          {existingPortfolio ? 'Update Portfolio →' : 'Analyze Portfolio →'}
         </Button>
       </div>
     </div>
