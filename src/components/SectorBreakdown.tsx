@@ -1,8 +1,13 @@
 'use client';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
 import { SECTOR_COLORS } from '@/lib/sampleData';
+import { PieChart as PieChartIcon } from 'lucide-react';
 
-export default function SectorBreakdown({ sectorConcentration }: { sectorConcentration: { [sector: string]: number } }) {
+interface SectorBreakdownProps {
+  sectorConcentration: { [sector: string]: number };
+}
+
+export default function SectorBreakdown({ sectorConcentration }: SectorBreakdownProps) {
   const data = Object.entries(sectorConcentration).map(([sector, percentage]) => ({
     name: sector,
     value: percentage,
@@ -11,6 +16,15 @@ export default function SectorBreakdown({ sectorConcentration }: { sectorConcent
   const renderLabel = (entry: any) => {
     if (entry.value < 5) return '';
     return `${entry.value.toFixed(0)}%`;
+  };
+
+  const formatTooltip = (value: any) => {
+    return `${Number(value).toFixed(1)}%`;
+  };
+
+  // Get color for sector, with fallback
+  const getColorForSector = (sector: string): string => {
+    return SECTOR_COLORS[sector] || SECTOR_COLORS['Other'] || '#94a3b8';
   };
 
   return (
@@ -54,12 +68,12 @@ export default function SectorBreakdown({ sectorConcentration }: { sectorConcent
               {data.map((entry, index) => (
                 <Cell 
                   key={`cell-${index}`} 
-                  fill={SECTOR_COLORS[entry.name] || '#94a3b8'}
+                  fill={getColorForSector(entry.name)}
                 />
               ))}
             </Pie>
             <Tooltip 
-              formatter={(value: any) => `${Number(value).toFixed(1)}%`}
+              formatter={formatTooltip}
               contentStyle={{
                 background: 'white',
                 border: '2px solid #e5e7eb',

@@ -1,5 +1,45 @@
 import { Portfolio } from '@/types/portfolio';
 
+export const SECTOR_COLORS: { [sector: string]: string } = {
+  'Technology': '#3b82f6',
+  'Healthcare': '#ef4444',
+  'Financial Services': '#10b981',
+  'Consumer Cyclical': '#f59e0b',
+  'Consumer Defensive': '#8b5cf6',
+  'Communication Services': '#ec4899',
+  'Energy': '#14b8a6',
+  'Utilities': '#6366f1',
+  'Real Estate': '#06b6d4',
+  'Basic Materials': '#84cc16',
+  'Industrials': '#f97316',
+  
+  // Additional sectors from Finnhub
+  'Automobiles': '#f59e0b',
+  'Chemicals': '#84cc16',
+  'Transportation': '#f97316',
+  'Pharmaceuticals': '#ef4444',
+  'Banks': '#10b981',
+  'Insurance': '#059669',
+  'Software': '#3b82f6',
+  'Hardware': '#2563eb',
+  'Semiconductors': '#1d4ed8',
+  'Retail': '#f59e0b',
+  'Food & Beverage': '#8b5cf6',
+  'Aerospace & Defense': '#6366f1',
+  'Construction': '#f97316',
+  'Metals & Mining': '#84cc16',
+  'Oil & Gas': '#14b8a6',
+  'Electric Utilities': '#6366f1',
+  'Telecommunications': '#ec4899',
+  'Media': '#db2777',
+  'Biotechnology': '#dc2626',
+  'Medical Devices': '#f87171',
+  'Capital Markets': '#059669',
+  
+  // Fallback
+  'Other': '#94a3b8',
+};
+
 export const SAMPLE_PORTFOLIOS: Portfolio[] = [
   {
     name: 'Tech Growth',
@@ -16,40 +56,25 @@ export const SAMPLE_PORTFOLIOS: Portfolio[] = [
   {
     name: 'Balanced',
     holdings: [
-      { ticker: 'SPY', weight: 30, sector: 'Diversified' },
-      { ticker: 'VTI', weight: 20, sector: 'Diversified' },
-      { ticker: 'JNJ', weight: 10, sector: 'Healthcare' },
-      { ticker: 'JPM', weight: 10, sector: 'Financial Services' },
-      { ticker: 'PG', weight: 10, sector: 'Consumer Defensive' },
-      { ticker: 'XLE', weight: 10, sector: 'Energy' },
-      { ticker: 'VNQ', weight: 10, sector: 'Real Estate' },
+      { ticker: 'AAPL', weight: 15, sector: 'Technology' },
+      { ticker: 'JPM', weight: 15, sector: 'Financial Services' },
+      { ticker: 'JNJ', weight: 15, sector: 'Healthcare' },
+      { ticker: 'PG', weight: 15, sector: 'Consumer Defensive' },
+      { ticker: 'XOM', weight: 15, sector: 'Energy' },
+      { ticker: 'VZ', weight: 15, sector: 'Communication Services' },
+      { ticker: 'NEE', weight: 10, sector: 'Utilities' },
     ],
   },
   {
     name: 'Dividend Income',
     holdings: [
-      { ticker: 'VYM', weight: 25, sector: 'Diversified' },
+      { ticker: 'JNJ', weight: 20, sector: 'Healthcare' },
+      { ticker: 'PG', weight: 18, sector: 'Consumer Defensive' },
       { ticker: 'KO', weight: 15, sector: 'Consumer Defensive' },
-      { ticker: 'PFE', weight: 15, sector: 'Healthcare' },
-      { ticker: 'VZ', weight: 15, sector: 'Communication Services' },
-      { ticker: 'T', weight: 10, sector: 'Communication Services' },
-      { ticker: 'MCD', weight: 10, sector: 'Consumer Cyclical' },
-      { ticker: 'XOM', weight: 10, sector: 'Energy' },
+      { ticker: 'T', weight: 15, sector: 'Communication Services' },
+      { ticker: 'XOM', weight: 12, sector: 'Energy' },
+      { ticker: 'VZ', weight: 10, sector: 'Communication Services' },
+      { ticker: 'PFE', weight: 10, sector: 'Healthcare' },
     ],
   },
 ];
-
-export const SECTOR_COLORS: { [key: string]: string } = {
-  'Technology': '#3b82f6',
-  'Healthcare': '#10b981',
-  'Financial Services': '#f59e0b',
-  'Consumer Cyclical': '#8b5cf6',
-  'Consumer Defensive': '#06b6d4',
-  'Communication Services': '#ec4899',
-  'Energy': '#ef4444',
-  'Real Estate': '#6366f1',
-  'Diversified': '#64748b',
-  'Utilities': '#84cc16',
-  'Basic Materials': '#f97316',
-  'Industrials': '#14b8a6',
-};
