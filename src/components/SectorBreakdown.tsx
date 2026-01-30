@@ -12,6 +12,10 @@ export default function SectorBreakdown({ sectorConcentration }: SectorBreakdown
     value: percentage,
   }));
 
+  const renderLabel = (entry: any) => {
+    return `${entry.name}: ${entry.value.toFixed(0)}%`;
+  };
+
   return (
     <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
       <h3 className="text-lg font-semibold text-gray-900 mb-4">Sector Allocation</h3>
@@ -22,7 +26,7 @@ export default function SectorBreakdown({ sectorConcentration }: SectorBreakdown
             cx="50%"
             cy="50%"
             labelLine={false}
-            label={(entry: any) => `${entry.name}: ${(entry.percent * 100).toFixed(0)}%`}
+            label={renderLabel}
             outerRadius={80}
             fill="#8884d8"
             dataKey="value"
