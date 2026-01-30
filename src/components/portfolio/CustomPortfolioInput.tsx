@@ -34,6 +34,7 @@ export default function CustomPortfolioInput({ onAnalyze, onCancel }: CustomPort
   const handleTickerChange = (index: number, value: string) => {
     const updated = [...holdings];
     updated[index].ticker = value.toUpperCase();
+    updated[index].error = undefined; // Clear error when typing
     setHoldings(updated);
 
     if (value.length >= 1) {
@@ -49,6 +50,7 @@ export default function CustomPortfolioInput({ onAnalyze, onCancel }: CustomPort
     const updated = [...holdings];
     updated[index].ticker = ticker;
     updated[index].loading = true;
+    updated[index].error = undefined; // Clear error before fetching
     setHoldings(updated);
     
     clearSearch();
@@ -64,6 +66,7 @@ export default function CustomPortfolioInput({ onAnalyze, onCancel }: CustomPort
         price: data.price,
         sector: data.sector,
         loading: false,
+        error: undefined, // Explicitly clear error on success
       };
     } else {
       newUpdated[index].loading = false;
@@ -79,9 +82,10 @@ export default function CustomPortfolioInput({ onAnalyze, onCancel }: CustomPort
     }, 200);
 
     const holding = holdings[index];
-    if (holding.ticker && !holding.sector) {
+    if (holding.ticker && !holding.sector && !holding.loading) {
       const updated = [...holdings];
       updated[index].loading = true;
+      updated[index].error = undefined; // Clear error before fetching
       setHoldings(updated);
       
       const data = await fetchStock(holding.ticker);
@@ -94,6 +98,7 @@ export default function CustomPortfolioInput({ onAnalyze, onCancel }: CustomPort
           price: data.price,
           sector: data.sector,
           loading: false,
+          error: undefined, // Explicitly clear error on success
         };
       } else {
         newUpdated[index].loading = false;
