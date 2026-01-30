@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { Portfolio } from '@/types/portfolio';
 import { analyzePortfolio } from '@/lib/portfolioAnalysis';
 import SamplePortfolios from '@/components/SamplePortfolios';
+import CustomPortfolioInput from '@/components/portfolio/CustomPortfolioInput';
 import SectorBreakdown from '@/components/SectorBreakdown';
 import RiskSummary from '@/components/RiskSummary';
 import AINarrative from '@/components/AINarrative';
@@ -10,15 +11,23 @@ import AINarrative from '@/components/AINarrative';
 export default function Home() {
   const [selectedPortfolio, setSelectedPortfolio] = useState<Portfolio | null>(null);
   const [analysis, setAnalysis] = useState<ReturnType<typeof analyzePortfolio> | null>(null);
+  const [showCustomInput, setShowCustomInput] = useState(false);
 
   const handlePortfolioSelect = (portfolio: Portfolio) => {
     setSelectedPortfolio(portfolio);
     const metrics = analyzePortfolio(portfolio);
     setAnalysis(metrics);
+    setShowCustomInput(false);
+  };
+
+  const handleReset = () => {
+    setSelectedPortfolio(null);
+    setAnalysis(null);
+    setShowCustomInput(false);
   };
 
   // Landing page with gradient background
-  if (!selectedPortfolio) {
+  if (!selectedPortfolio && !showCustomInput) {
     return (
       <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', padding: '3rem 1rem' }}>
         <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
@@ -47,6 +56,42 @@ export default function Home() {
           </div>
 
           <SamplePortfolios onSelect={handlePortfolioSelect} />
+
+          {/* Custom Portfolio Button */}
+          <div style={{ textAlign: 'center', marginTop: '3rem' }}>
+            <button
+              onClick={() => setShowCustomInput(true)}
+              style={{
+                padding: '1rem 2rem',
+                background: 'white',
+                color: '#667eea',
+                border: 'none',
+                borderRadius: '0.75rem',
+                fontSize: '1rem',
+                fontWeight: '700',
+                cursor: 'pointer',
+                boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
+              onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+            >
+              ✏️ Create Custom Portfolio
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Custom input page
+  if (showCustomInput && !selectedPortfolio) {
+    return (
+      <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', padding: '3rem 1rem' }}>
+        <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
+          <CustomPortfolioInput 
+            onAnalyze={handlePortfolioSelect}
+            onCancel={handleReset}
+          />
         </div>
       </div>
     );
@@ -66,15 +111,12 @@ export default function Home() {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div>
               <h2 style={{ fontSize: '2rem', fontWeight: '700', color: '#111827', marginBottom: '0.5rem' }}>
-                {selectedPortfolio.name}
+                {selectedPortfolio?.name ?? 'Unnamed Portfolio'}
               </h2>
-              <p style={{ color: '#6b7280' }}>{selectedPortfolio.holdings.length} holdings analyzed</p>
+              <p style={{ color: '#6b7280' }}>{selectedPortfolio?.holdings.length ?? 0} holdings analyzed</p>
             </div>
             <button
-              onClick={() => {
-                setSelectedPortfolio(null);
-                setAnalysis(null);
-              }}
+              onClick={handleReset}
               style={{
                 padding: '0.75rem 1.5rem',
                 background: '#667eea',
@@ -94,7 +136,7 @@ export default function Home() {
         {analysis && (
           <>
             <div style={{ marginBottom: '2rem' }}>
-              <AINarrative portfolio={selectedPortfolio} metrics={analysis} />
+              {selectedPortfolio && <AINarrative portfolio={selectedPortfolio} metrics={analysis} />}
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(500px, 1fr))', gap: '2rem' }}>
