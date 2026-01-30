@@ -33,7 +33,6 @@ export default function Home() {
   };
 
   const handleSavedPortfolioSelect = (savedPortfolio: any) => {
-    // Convert saved portfolio format to Portfolio type
     const portfolio: Portfolio = {
       name: savedPortfolio.name,
       holdings: savedPortfolio.holdings.map((h: any) => ({
@@ -46,7 +45,6 @@ export default function Home() {
       totalValue: savedPortfolio.totalValue,
     };
     
-    // Store the ID for editing/updating
     (portfolio as any).id = savedPortfolio.id;
     
     handlePortfolioSelect(portfolio);
@@ -79,7 +77,6 @@ export default function Home() {
         })),
       };
 
-      // Check if we're editing an existing portfolio
       if ((selectedPortfolio as any).id) {
         await updatePortfolio((selectedPortfolio as any).id, portfolioData);
         alert('Portfolio updated successfully!');
@@ -114,12 +111,10 @@ export default function Home() {
     setShowAuthModal(true);
   };
 
-  // Landing page with gradient background
   if (!selectedPortfolio && !showCustomInput) {
     return (
       <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', padding: '3rem 1rem' }}>
         <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
-          {/* Header with Auth */}
           <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '2rem' }}>
             {user ? (
               <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
@@ -212,7 +207,6 @@ export default function Home() {
             </p>
           </div>
 
-          {/* Saved Portfolios (only if logged in) */}
           {user && (
             <SavedPortfolios 
               onSelectPortfolio={handleSavedPortfolioSelect}
@@ -220,7 +214,6 @@ export default function Home() {
             />
           )}
 
-          {/* Sample Portfolios */}
           <div style={{ marginTop: user ? '3rem' : '0' }}>
             <h2 style={{ 
               fontSize: '2rem', 
@@ -234,7 +227,6 @@ export default function Home() {
             <SamplePortfolios onSelect={handlePortfolioSelect} />
           </div>
 
-          {/* Custom Portfolio Button */}
           <div style={{ textAlign: 'center', marginTop: '3rem' }}>
             <button
               onClick={() => setShowCustomInput(true)}
@@ -267,7 +259,6 @@ export default function Home() {
     );
   }
 
-  // Custom input page
   if (showCustomInput && !selectedPortfolio) {
     return (
       <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', padding: '3rem 1rem' }}>
@@ -282,7 +273,11 @@ export default function Home() {
     );
   }
 
-  // Analysis page
+  // Analysis page - add null check
+  if (!selectedPortfolio) {
+    return null;
+  }
+
   return (
     <div style={{ minHeight: '100vh', background: '#f8fafc', padding: '3rem 1rem' }}>
       <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
