@@ -7,8 +7,10 @@ export async function POST(request: Request) {
     // Simulate realistic API delay
     await new Promise(resolve => setTimeout(resolve, 1200));
 
-    const topSector = Object.entries(metrics.sectorConcentration)
-      .reduce((max: any, entry: any) => entry[1] > max[1] ? entry : max);
+    const topSector: [string, number] = Object.entries(metrics.sectorConcentration)
+      .reduce((max: [string, number], entry: [string, any]) => 
+        entry[1] > max[1] ? [entry[0], entry[1]] : max
+      , ['', 0]);
 
     const generateNarrative = () => {
       const concentration = topSector[1];
