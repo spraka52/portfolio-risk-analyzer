@@ -5,6 +5,7 @@ import { analyzePortfolio } from '@/lib/portfolioAnalysis';
 import SamplePortfolios from '@/components/SamplePortfolios';
 import SectorBreakdown from '@/components/SectorBreakdown';
 import RiskSummary from '@/components/RiskSummary';
+import AINarrative from '@/components/AINarrative';
 
 export default function Home() {
   const [selectedPortfolio, setSelectedPortfolio] = useState<Portfolio | null>(null);
@@ -20,20 +21,26 @@ export default function Home() {
     <main className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
       <div className="max-w-7xl mx-auto px-4 py-12">
         <div className="text-center mb-12">
-          <h1 className="text-5xl font-bold text-gray-900 mb-4">Portfolio Risk Analyzer</h1>
+          <h1 className="text-5xl font-bold text-gray-900 mb-4">
+            Portfolio Risk Analyzer
+          </h1>
           <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-            Discover hidden risks in your portfolio before they cost you money
+            AI-powered insights to discover hidden risks in your portfolio
           </p>
         </div>
+
         {!selectedPortfolio && (
           <div className="mb-12">
             <SamplePortfolios onSelect={handlePortfolioSelect} />
           </div>
         )}
+
         {selectedPortfolio && analysis && (
           <div className="space-y-8">
             <div className="flex justify-between items-center">
-              <h2 className="text-2xl font-bold text-gray-900">Analyzing: {selectedPortfolio.name}</h2>
+              <h2 className="text-2xl font-bold text-gray-900">
+                Analyzing: {selectedPortfolio.name}
+              </h2>
               <button
                 onClick={() => {
                   setSelectedPortfolio(null);
@@ -44,6 +51,10 @@ export default function Home() {
                 ← Try another portfolio
               </button>
             </div>
+
+            {/* AI Narrative - Featured at top */}
+            <AINarrative portfolio={selectedPortfolio} metrics={analysis} />
+
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
               <RiskSummary metrics={analysis} />
               <SectorBreakdown sectorConcentration={analysis.sectorConcentration} />
