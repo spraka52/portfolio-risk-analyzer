@@ -4,7 +4,7 @@
     "builder": "NIXPACKS"
   },
   "deploy": {
-    "startCommand": "mvn spring-boot:run -Dspring-boot.run.profiles=prod",
+    "startCommand": "java -Dserver.port=$PORT -Dspring.profiles.active=prod -jar target/*.jar",
     "restartPolicyType": "ON_FAILURE",
     "restartPolicyMaxRetries": 10
   }
