@@ -33,8 +33,8 @@
 - **Sector concentration analysis**: Visualize where your money actually sits across industries
 - **Diversification scoring**: A quantitative score showing how balanced your portfolio really is
 - **Risk level assessment**: Clear LOW / MEDIUM / HIGH classification based on concentration
-- **AI-generated insights**: Plain-English explanations powered by Anthropic Claude
-- **AI-powered rebalancing plan**: Claude suggests concrete trades to reduce concentration risk
+- **AI-generated insights**: Plain-English explanations powered by Groq
+- **AI-powered rebalancing plan**: Groq suggests concrete trades to reduce concentration risk
 - **What-if simulator**: Preview the impact of adding or removing a holding before you trade
 - **Sector correlation matrix**: See how correlated your sectors are — true diversification, not just spread
 - **News feed per holding**: Latest headlines for each stock in your portfolio
@@ -49,7 +49,7 @@
 - A Next.js 14 frontend deployed on Vercel serves the portfolio UI and calls a Spring Boot REST API
 - Spring Boot handles authentication (JWT), portfolio persistence (PostgreSQL), and proxies stock data
 - The risk engine runs on the frontend: sector weights are computed from live prices, then scored and classified
-- Anthropic Claude generates narrative summaries and rebalancing suggestions from the computed risk metrics
+- Groq generates narrative summaries and rebalancing suggestions from the computed risk metrics
 
 ```
 ┌─────────────┐      ┌──────────────────┐      ┌─────────────┐
@@ -77,7 +77,7 @@
 - **Frontend**: Next.js 14, TypeScript, Recharts, Tailwind CSS
 - **Backend**: Spring Boot 3.2, Spring Security (JWT), Spring Data JPA
 - **Database**: PostgreSQL 15
-- **External APIs**: Yahoo Finance (real-time stock data), Anthropic Claude (AI insights)
+- **External APIs**: Yahoo Finance (real-time stock data), Groq (AI insights)
 - **Infrastructure**: Vercel (frontend), Railway / Render / AWS (backend), Docker (local DB)
 
 ---
@@ -196,7 +196,7 @@ Copy the example below to `.env.local` and fill in your values:
 | Variable | Description |
 |----------|-------------|
 | `NEXT_PUBLIC_API_URL` | URL of the running Spring Boot API |
-| `ANTHROPIC_API_KEY` | API key from [anthropic.com](https://anthropic.com) |
+| `GROQ_API_KEY` | API key from [console.groq.com](https://console.groq.com) |
 
 ```shell
 # Run development server
@@ -236,7 +236,7 @@ These values are set in `application.properties` (backend) and `.env.local` (fro
 | `SPRING_DATASOURCE_URL` | `application.properties` | PostgreSQL JDBC connection string |
 | `JWT_SECRET` | `application.properties` | 256-bit secret for signing tokens |
 | `NEXT_PUBLIC_API_URL` | `.env.local` | Backend base URL |
-| `ANTHROPIC_API_KEY` | `.env.local` | Anthropic Claude API key |
+| `GROQ_API_KEY` | `.env.local` | Groq API key for AI features |
 
 ---
 
@@ -256,8 +256,8 @@ else if (maxConcentration > 50) riskLevel = 'MEDIUM';
 else riskLevel = 'LOW';
 ```
 
-4. Anthropic Claude generates a plain-English summary of the computed risks
-5. Claude also produces a concrete rebalancing plan with specific trade suggestions
+4. Groq generates a plain-English summary of the computed risks
+5. Groq also produces a concrete rebalancing plan with specific trade suggestions
 6. The what-if simulator lets users preview risk changes before making any trades
 7. Authenticated users can save portfolios, view value history, compare portfolios, and set alert thresholds
 
@@ -315,7 +315,7 @@ vercel --prod
 
 - Built with Next.js, Spring Boot, and PostgreSQL
 - Real-time market data provided by Yahoo Finance
-- AI insights powered by [Anthropic Claude](https://anthropic.com)
+- AI insights powered by [Groq](https://groq.com)
 - **Shreya Prakash** — [GitHub](https://github.com/spraka52) · [LinkedIn](https://linkedin.com/in/shreya-prakash)
 
 ---
