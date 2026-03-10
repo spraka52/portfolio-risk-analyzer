@@ -133,21 +133,46 @@ function ComparisonColumn({ label, portfolio, metrics, highlight }: ComparisonCo
   );
 }
 
+interface SavedPortfolioRaw {
+  id: number;
+  name: string;
+  holdings: Array<{ ticker: string; sector: string; weight: number; shares: number; currentPrice: number }>;
+  totalValue: number;
+  riskLevel: string;
+}
+
 interface PortfolioComparisonProps {
   portfolio: Portfolio;
   metrics: RiskMetrics;
+  savedPortfolios?: SavedPortfolioRaw[];
 }
 
-export default function PortfolioComparison({ portfolio, metrics }: PortfolioComparisonProps) {
+export default function PortfolioComparison({ portfolio, metrics, savedPortfolios = [] }: PortfolioComparisonProps) {
   const [open, setOpen] = useState(false);
   const [comparePortfolio, setComparePortfolio] = useState<Portfolio | null>(null);
   const [compareMetrics, setCompareMetrics] = useState<RiskMetrics | null>(null);
 
-  const handleSelect = (sample: Portfolio) => {
-    setComparePortfolio(sample);
-    setCompareMetrics(analyzePortfolio(sample));
+  const handleSelect = (p: Portfolio) => {
+    setComparePortfolio(p);
+    setCompareMetrics(analyzePortfolio(p));
     setOpen(false);
   };
+
+  // Convert a saved backend portfolio to the frontend Portfolio type
+  const toPortfolio = (raw: SavedPortfolioRaw): Portfolio => ({
+    name: raw.name,
+    totalValue: raw.totalValue,
+    holdings: raw.holdings.map(h => ({
+      ticker: h.ticker,
+      sector: h.sector,
+      weight: h.weight,
+      shares: h.shares,
+      currentPrice: h.currentPrice,
+    })),
+  });
+
+  // Saved portfolios that are different from the currently-viewed one
+  const otherSaved = savedPortfolios.filter(p => p.name !== portfolio.name);
 
   return (
     <div
@@ -266,25 +291,48 @@ export default function PortfolioComparison({ portfolio, metrics }: PortfolioCom
               </button>
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+              {/* ── User's saved portfolios ── */}
+              {otherSaved.length > 0 && (
+                <>
+                  <div style={{ fontSize: '0.7rem', fontWeight: '700', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.08em', padding: '0.25rem 0' }}>
+                    Your Portfolios
+                  </div>
+                  {otherSaved.map(raw => {
+                    const p = toPortfolio(raw);
+                    const m = analyzePortfolio(p);
+                    return (
+                      <button
+                        key={raw.id}
+                        onClick={() => handleSelect(p)}
+                        style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.875rem 1.25rem', background: '#f0f9ff', border: '1px solid #bae6fd', borderRadius: '0.75rem', cursor: 'pointer', textAlign: 'left', width: '100%' }}
+                      >
+                        <div>
+                          <div style={{ fontWeight: '700', color: '#111827', fontSize: '0.9rem' }}>{raw.name}</div>
+                          <div style={{ color: '#6b7280', fontSize: '0.8rem', marginTop: '0.2rem' }}>
+                            {raw.holdings.length} holdings &middot; Score {m.diversificationScore}/100
+                          </div>
+                        </div>
+                        <span style={{ background: RISK_COLORS[m.riskLevel], color: 'white', padding: '0.25rem 0.6rem', borderRadius: '9999px', fontSize: '0.75rem', fontWeight: '700' }}>
+                          {m.riskLevel}
+                        </span>
+                      </button>
+                    );
+                  })}
+                  <div style={{ fontSize: '0.7rem', fontWeight: '700', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.08em', padding: '0.5rem 0 0.25rem' }}>
+                    Sample Portfolios
+                  </div>
+                </>
+              )}
+
+              {/* ── Sample portfolios ── */}
               {SAMPLE_PORTFOLIOS.map((sample) => {
                 const m = analyzePortfolio(sample);
                 return (
                   <button
                     key={sample.name}
                     onClick={() => handleSelect(sample)}
-                    style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      padding: '1rem 1.25rem',
-                      background: '#f9fafb',
-                      border: '1px solid #e5e7eb',
-                      borderRadius: '0.75rem',
-                      cursor: 'pointer',
-                      textAlign: 'left',
-                      width: '100%',
-                    }}
+                    style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.875rem 1.25rem', background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: '0.75rem', cursor: 'pointer', textAlign: 'left', width: '100%' }}
                   >
                     <div>
                       <div style={{ fontWeight: '700', color: '#111827', fontSize: '0.9rem' }}>{sample.name}</div>
@@ -292,16 +340,7 @@ export default function PortfolioComparison({ portfolio, metrics }: PortfolioCom
                         {sample.holdings.length} holdings &middot; Score {m.diversificationScore}/100
                       </div>
                     </div>
-                    <span
-                      style={{
-                        background: RISK_COLORS[m.riskLevel],
-                        color: 'white',
-                        padding: '0.25rem 0.6rem',
-                        borderRadius: '9999px',
-                        fontSize: '0.75rem',
-                        fontWeight: '700',
-                      }}
-                    >
+                    <span style={{ background: RISK_COLORS[m.riskLevel], color: 'white', padding: '0.25rem 0.6rem', borderRadius: '9999px', fontSize: '0.75rem', fontWeight: '700' }}>
                       {m.riskLevel}
                     </span>
                   </button>
