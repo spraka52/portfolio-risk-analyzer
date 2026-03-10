@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Portfolio } from '@/types/portfolio';
 import { HoldingInput, calculatePortfolioValue, convertToPortfolio, validateHoldings } from '@/lib/utils/portfolio';
 import { useStockData } from '@/hooks/useStockData';
@@ -7,6 +7,33 @@ import { useStockSearch } from '@/hooks/useStockSearch';
 import HoldingInputComponent from './HoldingInput';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
+
+/** Parse a CSV string into rows of [ticker, shares] pairs.
+ *  Supports header row detection and both comma/tab delimiters.
+ */
+function parseCSV(text: string): { ticker: string; shares: number }[] {
+  const lines = text.trim().split(/\r?\n/).filter((l) => l.trim());
+  if (lines.length === 0) return [];
+
+  const delimiter = lines[0].includes('\t') ? '\t' : ',';
+  const rows = lines.map((l) => l.split(delimiter).map((c) => c.trim().replace(/^"|"$/g, '')));
+
+  // Detect header: first row contains non-numeric in second column or words like "ticker"/"symbol"
+  const firstRow = rows[0];
+  const isHeader =
+    isNaN(Number(firstRow[1])) ||
+    /ticker|symbol|shares|quantity|stock/i.test(firstRow[0]);
+
+  const dataRows = isHeader ? rows.slice(1) : rows;
+
+  return dataRows
+    .filter((r) => r.length >= 2 && r[0])
+    .map((r) => ({
+      ticker: r[0].toUpperCase().replace(/[^A-Z0-9.^-]/g, ''),
+      shares: parseFloat(r[1]) || 0,
+    }))
+    .filter((r) => r.ticker && r.shares > 0);
+}
 
 interface CustomPortfolioInputProps {
   onAnalyze: (portfolio: Portfolio) => void;
@@ -20,6 +47,8 @@ export default function CustomPortfolioInput({ onAnalyze, onCancel, existingPort
     { ticker: '', shares: 0 }
   ]);
   const [activeSearch, setActiveSearch] = useState<number | null>(null);
+  const [csvImporting, setCsvImporting] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { fetch: fetchStock } = useStockData();
   const { results: searchResults, search, clear: clearSearch } = useStockSearch();
@@ -130,6 +159,44 @@ export default function CustomPortfolioInput({ onAnalyze, onCancel, existingPort
     setHoldings(updated);
   };
 
+  const handleCSVFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setCsvImporting(true);
+    const text = await file.text();
+    const parsed = parseCSV(text);
+
+    if (parsed.length === 0) {
+      alert('No valid rows found. Expected format: Ticker,Shares (one per line).');
+      setCsvImporting(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      return;
+    }
+
+    // Start with empty slots for each parsed row
+    const newHoldings: (HoldingInput & { loading?: boolean; error?: string })[] = parsed.map((r) => ({
+      ticker: r.ticker,
+      shares: r.shares,
+      loading: true,
+    }));
+    setHoldings(newHoldings);
+
+    // Fetch stock data for each ticker
+    const fetched = await Promise.all(
+      parsed.map(async (r) => {
+        const data = await fetchStock(r.ticker);
+        return data
+          ? { ticker: r.ticker, shares: r.shares, name: data.name, price: data.price, sector: data.sector, loading: false }
+          : { ticker: r.ticker, shares: r.shares, loading: false, error: 'Not found' };
+      })
+    );
+
+    setHoldings(fetched);
+    setCsvImporting(false);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
   const handleAnalyze = () => {
     const error = validateHoldings(holdings);
     if (error) {
@@ -182,18 +249,51 @@ export default function CustomPortfolioInput({ onAnalyze, onCancel, existingPort
 
       {/* Holdings */}
       <div style={{ marginBottom: '1.5rem' }}>
-        <div style={{ 
-          display: 'flex', 
-          justifyContent: 'space-between', 
+        <div style={{
+          display: 'flex',
+          justifyContent: 'space-between',
           alignItems: 'center',
-          marginBottom: '1rem'
+          marginBottom: '1rem',
+          flexWrap: 'wrap',
+          gap: '0.5rem',
         }}>
           <label style={{ fontSize: '0.875rem', fontWeight: '600', color: '#374151' }}>
             Holdings
           </label>
-          <span style={{ fontSize: '0.875rem', color: '#6b7280', fontWeight: '600' }}>
-            Total Value: ${totalValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-          </span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+            {/* Hidden file input */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".csv,.txt"
+              style={{ display: 'none' }}
+              onChange={handleCSVFile}
+            />
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={csvImporting}
+              style={{
+                padding: '0.4rem 0.85rem',
+                background: csvImporting ? '#f3f4f6' : '#eff6ff',
+                color: csvImporting ? '#9ca3af' : '#667eea',
+                border: '1px solid #bfdbfe',
+                borderRadius: '0.5rem',
+                fontSize: '0.8rem',
+                fontWeight: '600',
+                cursor: csvImporting ? 'not-allowed' : 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.35rem',
+              }}
+              title="Import holdings from a CSV file (Ticker,Shares)"
+            >
+              {csvImporting ? '⏳ Importing...' : '📂 Import CSV'}
+            </button>
+            <span style={{ fontSize: '0.875rem', color: '#6b7280', fontWeight: '600' }}>
+              Total Value: ${totalValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            </span>
+          </div>
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
