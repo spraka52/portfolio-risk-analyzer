@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Portfolio, RiskMetrics } from '@/types/portfolio';
 import { analyzePortfolio } from '@/lib/portfolioAnalysis';
 import { FlaskConical, TrendingUp, TrendingDown, Minus } from 'lucide-react';
@@ -9,53 +9,112 @@ interface WhatIfSimulatorProps {
   metrics: RiskMetrics;
 }
 
+interface SearchResult {
+  ticker: string;
+  name: string;
+  exchange: string;
+}
+
 const RISK_ORDER: Record<string, number> = { LOW: 1, MEDIUM: 2, HIGH: 3 };
 const RISK_COLORS: Record<string, string> = { LOW: '#10b981', MEDIUM: '#f59e0b', HIGH: '#ef4444' };
 
 export default function WhatIfSimulator({ portfolio, metrics }: WhatIfSimulatorProps) {
   const [open, setOpen] = useState(false);
-  const [ticker, setTicker] = useState('');
+
+  // Ticker search
+  const [query, setQuery] = useState('');
+  const [suggestions, setSuggestions] = useState<SearchResult[]>([]);
+  const [searching, setSearching] = useState(false);
+  const [selectedStock, setSelectedStock] = useState<{ ticker: string; name: string; price: number; sector: string } | null>(null);
+  const [loadingStock, setLoadingStock] = useState(false);
+  const [showDropdown, setShowDropdown] = useState(false);
+  const searchRef = useRef<HTMLDivElement>(null);
+
   const [shares, setShares] = useState('');
-  const [price, setPrice] = useState('');
-  const [sector, setSector] = useState('Technology');
   const [result, setResult] = useState<{ portfolio: Portfolio; metrics: RiskMetrics } | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const SECTORS = ['Technology', 'Healthcare', 'Financials', 'Consumer Discretionary', 'Industrials', 'Energy', 'Utilities', 'Real Estate', 'Materials', 'Communication Services', 'Consumer Staples'];
+  // Close dropdown on outside click
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (searchRef.current && !searchRef.current.contains(e.target as Node)) {
+        setShowDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
 
-  const simulate = async () => {
-    if (!ticker.trim() || !shares || !price) {
-      setError('Fill in all fields.');
+  // Debounced search
+  useEffect(() => {
+    if (!query || query.length < 1 || selectedStock) {
+      setSuggestions([]);
+      setShowDropdown(false);
       return;
     }
+    const timer = setTimeout(async () => {
+      setSearching(true);
+      try {
+        const res = await fetch(`/api/stock/search?q=${encodeURIComponent(query)}`);
+        const data = await res.json();
+        setSuggestions(data.results || []);
+        setShowDropdown(true);
+      } catch {
+        setSuggestions([]);
+      } finally {
+        setSearching(false);
+      }
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [query, selectedStock]);
+
+  const selectStock = async (hit: SearchResult) => {
+    setShowDropdown(false);
+    setQuery(`${hit.ticker} — ${hit.name}`);
+    setLoadingStock(true);
+    setError('');
+    try {
+      const res = await fetch(`/api/stock?ticker=${hit.ticker}`);
+      const data = await res.json();
+      setSelectedStock({
+        ticker: hit.ticker,
+        name: hit.name,
+        price: data.price ?? 0,
+        sector: data.sector ?? 'Unknown',
+      });
+    } catch {
+      setError('Could not fetch stock details. Try again.');
+    } finally {
+      setLoadingStock(false);
+    }
+  };
+
+  const clearSelection = () => {
+    setSelectedStock(null);
+    setQuery('');
+    setSuggestions([]);
+    setResult(null);
+    setError('');
+  };
+
+  const simulate = async () => {
+    if (!selectedStock) { setError('Please select a stock first.'); return; }
+    if (!shares || parseFloat(shares) <= 0) { setError('Enter a valid number of shares.'); return; }
     setError('');
     setLoading(true);
 
-    // Try to fetch real price from Finnhub
-    let resolvedPrice = parseFloat(price);
-    let resolvedSector = sector;
-    try {
-      const res = await fetch(`/api/stock/${ticker.toUpperCase().trim()}`);
-      if (res.ok) {
-        const data = await res.json();
-        if (data.currentPrice) resolvedPrice = data.currentPrice;
-        if (data.sector) resolvedSector = data.sector;
-      }
-    } catch { /* use manual values */ }
-
     const newShares = parseFloat(shares);
-    const newValue = resolvedPrice * newShares;
+    const newValue = selectedStock.price * newShares;
 
     const simHolding = {
-      ticker: ticker.toUpperCase().trim(),
+      ticker: selectedStock.ticker,
       shares: newShares,
-      currentPrice: resolvedPrice,
+      currentPrice: selectedStock.price,
       value: newValue,
-      sector: resolvedSector,
+      sector: selectedStock.sector,
     };
 
-    // Recalculate weights for all holdings + new one
     const allHoldings = [...portfolio.holdings, simHolding];
     const total = allHoldings.reduce((s, h) => s + (h.value ?? (h.currentPrice ?? 0) * (h.shares ?? 0)), 0);
     const withWeights = allHoldings.map(h => ({
@@ -71,9 +130,7 @@ export default function WhatIfSimulator({ portfolio, metrics }: WhatIfSimulatorP
   };
 
   const scoreDelta = result ? result.metrics.diversificationScore - metrics.diversificationScore : 0;
-  const riskChange = result
-    ? RISK_ORDER[result.metrics.riskLevel] - RISK_ORDER[metrics.riskLevel]
-    : 0;
+  const riskChange = result ? RISK_ORDER[result.metrics.riskLevel] - RISK_ORDER[metrics.riskLevel] : 0;
 
   return (
     <div style={{ background: 'white', borderRadius: '1rem', padding: '2rem', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
@@ -88,7 +145,7 @@ export default function WhatIfSimulator({ portfolio, metrics }: WhatIfSimulatorP
           </div>
         </div>
         <button
-          onClick={() => { setOpen(!open); setResult(null); setError(''); }}
+          onClick={() => { setOpen(!open); clearSelection(); setShares(''); }}
           style={{ padding: '0.5rem 1rem', background: open ? '#f3f4f6' : '#667eea', color: open ? '#374151' : 'white', border: 'none', borderRadius: '0.5rem', fontWeight: '600', fontSize: '0.85rem', cursor: 'pointer' }}
         >
           {open ? 'Close' : 'Try it'}
@@ -97,57 +154,88 @@ export default function WhatIfSimulator({ portfolio, metrics }: WhatIfSimulatorP
 
       {open && (
         <div style={{ marginTop: '1.5rem' }}>
-          {/* Inputs */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '0.75rem', marginBottom: '0.75rem' }}>
-            <div>
-              <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: '600', color: '#374151', marginBottom: '0.3rem' }}>Ticker</label>
-              <input
-                value={ticker}
-                onChange={e => setTicker(e.target.value.toUpperCase())}
-                placeholder="e.g. NVDA"
-                style={{ width: '100%', padding: '0.5rem 0.75rem', border: '1px solid #d1d5db', borderRadius: '0.5rem', fontSize: '0.875rem', boxSizing: 'border-box', outline: 'none', textTransform: 'uppercase' }}
-              />
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '0.75rem', alignItems: 'start', marginBottom: '0.75rem' }}>
+
+            {/* Stock search */}
+            <div ref={searchRef} style={{ position: 'relative' }}>
+              <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: '600', color: '#374151', marginBottom: '0.3rem' }}>
+                Stock
+              </label>
+              <div style={{ position: 'relative' }}>
+                <input
+                  value={query}
+                  onChange={e => { setQuery(e.target.value); if (selectedStock) clearSelection(); }}
+                  placeholder="Search by name or ticker… e.g. Apple"
+                  disabled={loadingStock}
+                  style={{ width: '100%', padding: '0.5rem 2rem 0.5rem 0.75rem', border: `1px solid ${selectedStock ? '#10b981' : '#d1d5db'}`, borderRadius: '0.5rem', fontSize: '0.875rem', boxSizing: 'border-box', outline: 'none', background: loadingStock ? '#f9fafb' : 'white' }}
+                />
+                {(searching || loadingStock) && (
+                  <span style={{ position: 'absolute', right: '0.6rem', top: '50%', transform: 'translateY(-50%)', fontSize: '0.75rem', color: '#9ca3af' }}>…</span>
+                )}
+                {selectedStock && !loadingStock && (
+                  <button onClick={clearSelection} style={{ position: 'absolute', right: '0.5rem', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#9ca3af', fontSize: '1rem', lineHeight: 1 }}>×</button>
+                )}
+              </div>
+
+              {/* Dropdown */}
+              {showDropdown && suggestions.length > 0 && (
+                <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: 'white', border: '1px solid #e5e7eb', borderRadius: '0.5rem', boxShadow: '0 4px 12px rgba(0,0,0,0.1)', zIndex: 50, marginTop: '2px', overflow: 'hidden' }}>
+                  {suggestions.map(s => (
+                    <button
+                      key={s.ticker}
+                      onMouseDown={() => selectStock(s)}
+                      style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', padding: '0.6rem 0.875rem', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', borderBottom: '1px solid #f3f4f6' }}
+                      onMouseEnter={e => e.currentTarget.style.background = '#f9fafb'}
+                      onMouseLeave={e => e.currentTarget.style.background = 'none'}
+                    >
+                      <span>
+                        <span style={{ fontWeight: '700', fontSize: '0.875rem', color: '#111827' }}>{s.ticker}</span>
+                        <span style={{ fontSize: '0.8rem', color: '#6b7280', marginLeft: '0.5rem' }}>{s.name}</span>
+                      </span>
+                      <span style={{ fontSize: '0.7rem', color: '#9ca3af' }}>{s.exchange}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
+
+            {/* Shares */}
             <div>
               <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: '600', color: '#374151', marginBottom: '0.3rem' }}>Shares</label>
               <input
                 type="number" min="1" value={shares} onChange={e => setShares(e.target.value)}
                 placeholder="e.g. 10"
-                style={{ width: '100%', padding: '0.5rem 0.75rem', border: '1px solid #d1d5db', borderRadius: '0.5rem', fontSize: '0.875rem', boxSizing: 'border-box', outline: 'none' }}
+                style={{ width: '110px', padding: '0.5rem 0.75rem', border: '1px solid #d1d5db', borderRadius: '0.5rem', fontSize: '0.875rem', boxSizing: 'border-box', outline: 'none' }}
               />
-            </div>
-            <div>
-              <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: '600', color: '#374151', marginBottom: '0.3rem' }}>Price ($)</label>
-              <input
-                type="number" min="0.01" step="0.01" value={price} onChange={e => setPrice(e.target.value)}
-                placeholder="e.g. 120.00"
-                style={{ width: '100%', padding: '0.5rem 0.75rem', border: '1px solid #d1d5db', borderRadius: '0.5rem', fontSize: '0.875rem', boxSizing: 'border-box', outline: 'none' }}
-              />
-            </div>
-            <div>
-              <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: '600', color: '#374151', marginBottom: '0.3rem' }}>Sector</label>
-              <select
-                value={sector} onChange={e => setSector(e.target.value)}
-                style={{ width: '100%', padding: '0.5rem 0.75rem', border: '1px solid #d1d5db', borderRadius: '0.5rem', fontSize: '0.875rem', boxSizing: 'border-box', outline: 'none', background: 'white' }}
-              >
-                {SECTORS.map(s => <option key={s}>{s}</option>)}
-              </select>
             </div>
           </div>
+
+          {/* Auto-resolved stock info pill */}
+          {selectedStock && (
+            <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '0.75rem', flexWrap: 'wrap' }}>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', padding: '0.3rem 0.75rem', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '9999px', fontSize: '0.78rem', color: '#166534', fontWeight: '600' }}>
+                Price: ${selectedStock.price.toFixed(2)}
+              </span>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.3rem', padding: '0.3rem 0.75rem', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: '9999px', fontSize: '0.78rem', color: '#1e40af', fontWeight: '600' }}>
+                Sector: {selectedStock.sector}
+              </span>
+            </div>
+          )}
 
           {error && <p style={{ color: '#ef4444', fontSize: '0.8rem', margin: '0 0 0.75rem' }}>{error}</p>}
 
           <button
-            onClick={simulate} disabled={loading}
-            style={{ padding: '0.625rem 1.5rem', background: '#8b5cf6', color: 'white', border: 'none', borderRadius: '0.5rem', fontWeight: '600', fontSize: '0.875rem', cursor: loading ? 'not-allowed' : 'pointer', opacity: loading ? 0.7 : 1 }}
+            onClick={simulate} disabled={loading || !selectedStock || !shares}
+            style={{ padding: '0.625rem 1.5rem', background: '#8b5cf6', color: 'white', border: 'none', borderRadius: '0.5rem', fontWeight: '600', fontSize: '0.875rem', cursor: (loading || !selectedStock || !shares) ? 'not-allowed' : 'pointer', opacity: (loading || !selectedStock || !shares) ? 0.5 : 1 }}
           >
-            {loading ? 'Simulating...' : 'Run Simulation'}
+            {loading ? 'Simulating…' : 'Run Simulation'}
           </button>
 
           {/* Results */}
-          {result && (
+          {result && selectedStock && (
             <div style={{ marginTop: '1.5rem', borderTop: '1px solid #f3f4f6', paddingTop: '1.5rem' }}>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
+
                 {/* Diversification score */}
                 <div style={{ background: '#f9fafb', borderRadius: '0.75rem', padding: '1rem', borderLeft: `4px solid ${scoreDelta >= 0 ? '#10b981' : '#ef4444'}` }}>
                   <div style={{ fontSize: '0.7rem', color: '#6b7280', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>Diversification Score</div>
@@ -179,7 +267,7 @@ export default function WhatIfSimulator({ portfolio, metrics }: WhatIfSimulatorP
                   <div style={{ fontSize: '0.75rem', color: '#9ca3af', marginTop: '0.4rem' }}>was {metrics.riskLevel}</div>
                 </div>
 
-                {/* Top sector shift */}
+                {/* Top sector */}
                 <div style={{ background: '#f9fafb', borderRadius: '0.75rem', padding: '1rem', borderLeft: '4px solid #667eea' }}>
                   <div style={{ fontSize: '0.7rem', color: '#6b7280', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.5rem' }}>Top Concentration</div>
                   {Object.entries(result.metrics.sectorConcentration)
@@ -195,7 +283,7 @@ export default function WhatIfSimulator({ portfolio, metrics }: WhatIfSimulatorP
               </div>
 
               <p style={{ marginTop: '1rem', fontSize: '0.8rem', color: '#9ca3af', fontStyle: 'italic' }}>
-                Simulation adds <strong style={{ color: '#374151' }}>{ticker}</strong> ({shares} shares @ ${price}) to your current {portfolio.holdings.length} holdings.
+                Simulation adds <strong style={{ color: '#374151' }}>{selectedStock.ticker}</strong> ({shares} shares @ ${selectedStock.price.toFixed(2)}) to your current {portfolio.holdings.length} holdings.
               </p>
             </div>
           )}
