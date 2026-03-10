@@ -10,36 +10,41 @@ export async function GET(request: Request) {
   }
 
   try {
-    const response = await fetch(
-      `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${ticker}`,
-      {
-        headers: { 'User-Agent': 'Mozilla/5.0' },
-      }
-    );
+    // Fetch price (quote) and sector (assetProfile) in parallel
+    const [quoteRes, summaryRes] = await Promise.all([
+      fetch(
+        `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(ticker)}?interval=1d&range=1d`,
+        { headers: { 'User-Agent': 'Mozilla/5.0' } }
+      ),
+      fetch(
+        `https://query1.finance.yahoo.com/v10/finance/quoteSummary/${encodeURIComponent(ticker)}?modules=assetProfile`,
+        { headers: { 'User-Agent': 'Mozilla/5.0' } }
+      ),
+    ]);
 
-    if (!response.ok) {
-      throw new Error('Failed to fetch stock data');
+    let price = 0;
+    let name = ticker;
+    if (quoteRes.ok) {
+      const quoteData = await quoteRes.json();
+      const meta = quoteData?.chart?.result?.[0]?.meta;
+      price = meta?.regularMarketPrice ?? meta?.previousClose ?? 0;
+      name = meta?.longName || meta?.shortName || ticker;
     }
 
-    const data = await response.json();
-    
-    if (!data.quoteResponse?.result?.[0]) {
-      return NextResponse.json({ error: 'Stock not found' }, { status: 404 });
+    let sector = '';
+    if (summaryRes.ok) {
+      const summaryData = await summaryRes.json();
+      sector = summaryData?.quoteSummary?.result?.[0]?.assetProfile?.sector ?? '';
     }
-
-    const stock = data.quoteResponse.result[0];
 
     return NextResponse.json({
-      ticker: stock.symbol,
-      name: stock.longName || stock.shortName,
-      price: stock.regularMarketPrice || 0,
-      sector: SECTOR_MAP[stock.sector] || stock.sector || 'Technology',
+      ticker: ticker.toUpperCase(),
+      name,
+      price,
+      sector: SECTOR_MAP[sector] || sector || 'Unknown',
     });
   } catch (error) {
     console.error('Stock API error:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch stock data' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to fetch stock data' }, { status: 500 });
   }
 }
