@@ -32,15 +32,15 @@ export default function AINarrative({ portfolio, metrics }: { portfolio: Portfol
         <div style={{ fontSize: '2rem' }}>✨</div>
         <div>
           <h3 style={{ fontSize: '1.5rem', fontWeight: '700', marginBottom: '0.25rem' }}>
-            AI Risk Analysis <span style={{ 
-              padding: '0.25rem 0.5rem', 
-              background: 'rgba(255,255,255,0.2)', 
-              borderRadius: '0.25rem', 
+            AI Risk Analysis <span style={{
+              padding: '0.25rem 0.5rem',
+              background: 'rgba(255,255,255,0.2)',
+              borderRadius: '0.25rem',
               fontSize: '0.75rem',
               marginLeft: '0.5rem'
-            }}>BETA</span>
+            }}>GROQ</span>
           </h3>
-          <p style={{ opacity: 0.9, fontSize: '0.875rem' }}>Intelligent insights powered by advanced risk analysis</p>
+          <p style={{ opacity: 0.9, fontSize: '0.875rem' }}>Powered by Llama 3.3 70B via Groq</p>
         </div>
       </div>
 
@@ -72,7 +72,7 @@ export default function AINarrative({ portfolio, metrics }: { portfolio: Portfol
         display: 'flex',
         justifyContent: 'space-between'
       }}>
-        <span>✨ Powered by AI</span>
+        <span>⚡ Powered by Groq · Llama 3.3 70B</span>
         <span>Updated just now</span>
       </div>
     </div>
