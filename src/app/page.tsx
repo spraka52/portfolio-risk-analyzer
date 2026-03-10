@@ -82,7 +82,6 @@ export default function Home() {
             <div style={{ width: '36px', height: '36px', background: 'linear-gradient(135deg, #667eea, #764ba2)', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 14px rgba(102,126,234,0.45)', fontSize: '1rem' }}>
               📊
             </div>
-            <span style={{ color: 'white', fontWeight: '800', fontSize: '1.15rem', letterSpacing: '-0.025em' }}>RiskLens</span>
           </div>
 
           {user ? (
