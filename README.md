@@ -281,12 +281,6 @@ vercel --prod
 
 ---
 
-## License
-
-MIT License — see [LICENSE](LICENSE) for details.
-
----
-
 ## Attribution
 
 - Built with Next.js, Spring Boot, and PostgreSQL
