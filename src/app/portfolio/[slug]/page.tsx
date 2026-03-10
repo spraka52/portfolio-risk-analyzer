@@ -18,7 +18,7 @@ import NewsFeed from '@/components/NewsFeed';
 import PortfolioHistory from '@/components/PortfolioHistory';
 import AlertSettings, { loadAlertConfig, shouldTriggerAlert } from '@/components/AlertSettings';
 import AuthModal from '@/components/auth/AuthModal';
-import { Download, ArrowLeft } from 'lucide-react';
+import { Download, ArrowLeft, Edit2, Check } from 'lucide-react';
 import { AnalysisSkeleton, ErrorMessage } from '@/components/ui/Skeleton';
 
 function applyLivePrices(portfolio: Portfolio, prices: Record<string, number>): Portfolio {
@@ -50,6 +50,8 @@ export default function PortfolioPage() {
   const [error, setError] = useState<string | null>(null);
   const [analysisKey, setAnalysisKey] = useState(0);
   const [saving, setSaving] = useState(false);
+  const [editingName, setEditingName] = useState(false);
+  const [nameDraft, setNameDraft] = useState('');
   const [alertToast, setAlertToast] = useState<string | null>(null);
   const [savedPortfoliosList, setSavedPortfoliosList] = useState<any[]>([]);
   const [showAuthModal, setShowAuthModal] = useState(false);
@@ -118,6 +120,16 @@ export default function PortfolioPage() {
     }).catch(() => {});
   }, [analysisKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  const applyNameEdit = () => {
+    const trimmed = nameDraft.trim();
+    if (trimmed && portfolio && trimmed !== portfolio.name) {
+      const updated = { ...portfolio, name: trimmed };
+      setPortfolio(updated);
+      sessionStorage.setItem('risklens_current_portfolio', JSON.stringify(updated));
+    }
+    setEditingName(false);
+  };
+
   const handleSave = async () => {
     if (!user) { setAuthMode('login'); setShowAuthModal(true); return; }
     if (!portfolio) return;
@@ -178,9 +190,46 @@ export default function PortfolioPage() {
         }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
             <div>
-              <h2 style={{ fontSize: '1.875rem', fontWeight: '800', color: 'white', marginBottom: '0.3rem', letterSpacing: '-0.02em' }}>
-                {portfolio?.name}
-              </h2>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.3rem' }}>
+                {editingName ? (
+                  <>
+                    <input
+                      autoFocus
+                      value={nameDraft}
+                      onChange={(e) => setNameDraft(e.target.value)}
+                      onBlur={applyNameEdit}
+                      onKeyDown={(e) => { if (e.key === 'Enter') applyNameEdit(); if (e.key === 'Escape') setEditingName(false); }}
+                      style={{
+                        fontSize: '1.875rem', fontWeight: '800', color: 'white', letterSpacing: '-0.02em',
+                        background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.3)',
+                        borderRadius: '0.5rem', padding: '0.1rem 0.5rem', outline: 'none',
+                        width: '100%', boxSizing: 'border-box',
+                      }}
+                    />
+                    <button
+                      onClick={applyNameEdit}
+                      style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#10b981', padding: '0.25rem', display: 'flex' }}
+                    >
+                      <Check size={20} />
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <h2 style={{ fontSize: '1.875rem', fontWeight: '800', color: 'white', margin: 0, letterSpacing: '-0.02em' }}>
+                      {portfolio?.name}
+                    </h2>
+                    <button
+                      onClick={() => { setNameDraft(portfolio?.name ?? ''); setEditingName(true); }}
+                      style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'rgba(255,255,255,0.4)', padding: '0.25rem', display: 'flex', transition: 'color 0.2s' }}
+                      onMouseEnter={(e) => e.currentTarget.style.color = 'rgba(255,255,255,0.9)'}
+                      onMouseLeave={(e) => e.currentTarget.style.color = 'rgba(255,255,255,0.4)'}
+                      title="Rename portfolio"
+                    >
+                      <Edit2 size={16} />
+                    </button>
+                  </>
+                )}
+              </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.875rem', flexWrap: 'wrap' }}>
                 <span style={{ color: 'rgba(255,255,255,0.45)', fontSize: '0.85rem' }}>
                   {portfolio?.holdings.length} holdings
