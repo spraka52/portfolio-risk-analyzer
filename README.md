@@ -34,15 +34,22 @@
 - **Diversification scoring**: A quantitative score showing how balanced your portfolio really is
 - **Risk level assessment**: Clear LOW / MEDIUM / HIGH classification based on concentration
 - **AI-generated insights**: Plain-English explanations powered by Anthropic Claude
+- **AI-powered rebalancing plan**: Claude suggests concrete trades to reduce concentration risk
+- **What-if simulator**: Preview the impact of adding or removing a holding before you trade
+- **Sector correlation matrix**: See how correlated your sectors are — true diversification, not just spread
+- **News feed per holding**: Latest headlines for each stock in your portfolio
+- **Portfolio value history**: Track how your portfolio's total value changes across sessions
+- **Smart email alerts**: Get notified only when your portfolio's risk level actually changes
+- **Portfolio comparison**: Compare any two saved portfolios side-by-side
 - **Portfolio management**: Save, edit, and track multiple portfolios per account
-- **Real-time stock data**: Live prices and metadata via the Finnhub API
+- **Real-time stock data**: Live prices and metadata via the Yahoo Finance API
 
 ## Architecture (at a glance)
 
 - A Next.js 14 frontend deployed on Vercel serves the portfolio UI and calls a Spring Boot REST API
-- Spring Boot handles authentication (JWT), portfolio persistence (PostgreSQL), and proxies stock data from Finnhub
+- Spring Boot handles authentication (JWT), portfolio persistence (PostgreSQL), and proxies stock data
 - The risk engine runs on the frontend: sector weights are computed from live prices, then scored and classified
-- Anthropic Claude generates narrative summaries from the computed risk metrics
+- Anthropic Claude generates narrative summaries and rebalancing suggestions from the computed risk metrics
 
 ```
 ┌─────────────┐      ┌──────────────────┐      ┌─────────────┐
@@ -57,10 +64,10 @@
                               │
                     ┌─────────┴─────────┐
                     ▼                   ▼
-            ┌──────────────┐    ┌─────────────┐
-            │  PostgreSQL  │    │ Finnhub API │
-            │   Database   │    │  (stocks)   │
-            └──────────────┘    └─────────────┘
+            ┌──────────────┐    ┌──────────────────┐
+            │  PostgreSQL  │    │ Yahoo Finance API │
+            │   Database   │    │  (stock data)    │
+            └──────────────┘    └──────────────────┘
 ```
 
 ---
@@ -70,7 +77,7 @@
 - **Frontend**: Next.js 14, TypeScript, Recharts, Tailwind CSS
 - **Backend**: Spring Boot 3.2, Spring Security (JWT), Spring Data JPA
 - **Database**: PostgreSQL 15
-- **External APIs**: Finnhub (real-time stock data), Anthropic Claude (AI insights)
+- **External APIs**: Yahoo Finance (real-time stock data), Anthropic Claude (AI insights)
 - **Infrastructure**: Vercel (frontend), Railway / Render / AWS (backend), Docker (local DB)
 
 ---
@@ -81,49 +88,76 @@
 portfolio-risk-analyzer/
 ├── src/
 │   ├── app/
-│   │   ├── page.tsx                 # Main application
-│   │   └── layout.tsx               # Root layout with auth
+│   │   ├── api/
+│   │   │   ├── alerts/route.ts          # Email alert configuration
+│   │   │   ├── analyze/route.ts         # AI risk narrative
+│   │   │   ├── historical/route.ts      # Portfolio value history
+│   │   │   ├── news/route.ts            # News feed per holding
+│   │   │   ├── rebalance/route.ts       # AI rebalancing suggestions
+│   │   │   ├── stock/route.ts           # Stock quote proxy
+│   │   │   └── stock/search/route.ts    # Stock search autocomplete
+│   │   ├── portfolio/
+│   │   │   └── [slug]/page.tsx          # Individual portfolio view
+│   │   ├── page.tsx                     # Main application
+│   │   └── layout.tsx                   # Root layout with auth
 │   ├── components/
 │   │   ├── auth/
-│   │   │   └── AuthModal.tsx        # Login/register modal
+│   │   │   └── AuthModal.tsx            # Login/register modal
 │   │   ├── portfolio/
 │   │   │   ├── CustomPortfolioInput.tsx
 │   │   │   ├── HoldingInput.tsx
 │   │   │   └── StockSearchDropdown.tsx
 │   │   ├── ui/
 │   │   │   ├── Button.tsx
-│   │   │   └── Input.tsx
-│   │   ├── AINarrative.tsx          # AI-generated insights
-│   │   ├── RiskSummary.tsx          # Risk metrics card
-│   │   ├── SectorBreakdown.tsx      # Donut chart
-│   │   ├── SamplePortfolios.tsx     # Pre-built portfolios
-│   │   └── SavedPortfolios.tsx      # User's saved portfolios
+│   │   │   ├── Input.tsx
+│   │   │   └── Skeleton.tsx
+│   │   ├── AINarrative.tsx              # AI-generated insights
+│   │   ├── AlertSettings.tsx            # Smart email alert configuration
+│   │   ├── CorrelationMatrix.tsx        # Sector correlation heatmap
+│   │   ├── CustomPortfolioInput.tsx     # Custom portfolio entry
+│   │   ├── NewsFeed.tsx                 # Per-holding news headlines
+│   │   ├── PortfolioAnalytics.tsx       # Analytics dashboard
+│   │   ├── PortfolioComparison.tsx      # Side-by-side portfolio compare
+│   │   ├── PortfolioHistory.tsx         # Portfolio value over time
+│   │   ├── RebalancingSuggestions.tsx   # AI rebalancing plan
+│   │   ├── RiskSummary.tsx              # Risk metrics card
+│   │   ├── SamplePortfolios.tsx         # Pre-built portfolios
+│   │   ├── SavedPortfolios.tsx          # User's saved portfolios
+│   │   ├── SectorBreakdown.tsx          # Donut chart
+│   │   └── WhatIfSimulator.tsx          # What-if scenario tool
 │   ├── contexts/
-│   │   └── AuthContext.tsx          # Auth state management
+│   │   └── AuthContext.tsx              # Auth state management
 │   ├── hooks/
-│   │   ├── useStockData.ts          # Fetch stock quotes
-│   │   ├── useStockSearch.ts        # Search autocomplete
-│   │   └── usePortfolioAPI.ts       # Backend API calls
+│   │   ├── useLivePrices.ts             # Live price updates
+│   │   ├── useStockData.ts              # Fetch stock quotes
+│   │   ├── useStockSearch.ts            # Search autocomplete
+│   │   └── usePortfolioAPI.ts           # Backend API calls
 │   ├── lib/
-│   │   ├── portfolioAnalysis.ts     # Risk calculations
-│   │   └── sampleData.ts            # Sample portfolios
+│   │   ├── api/
+│   │   │   └── stocks.ts                # Stock API client
+│   │   ├── constants/
+│   │   │   └── sectors.ts               # Sector classifications
+│   │   ├── utils/
+│   │   │   └── portfolio.ts             # Portfolio utility functions
+│   │   ├── portfolioAnalysis.ts         # Risk calculations
+│   │   └── sampleData.ts               # Sample portfolios
 │   └── types/
-│       └── portfolio.ts             # TypeScript types
+│       └── portfolio.ts                 # TypeScript types
 │
 ├── portfolio-backend/
 │   └── src/main/java/com/portfolio/analyzer/
 │       ├── config/
-│       │   └── SecurityConfig.java  # Spring Security + CORS
+│       │   └── SecurityConfig.java      # Spring Security + CORS
 │       ├── controller/
-│       │   ├── AuthController.java  # Login/register
+│       │   ├── AuthController.java      # Login/register
 │       │   ├── PortfolioController.java
-│       │   └── StockController.java # Finnhub proxy
-│       ├── dto/                     # Request/response objects
+│       │   └── StockController.java     # Stock data proxy
+│       ├── dto/                         # Request/response objects
 │       ├── model/
 │       │   ├── User.java
 │       │   ├── Portfolio.java
 │       │   └── Holding.java
-│       ├── repository/              # JPA repositories
+│       ├── repository/                  # JPA repositories
 │       ├── security/
 │       │   ├── JwtUtils.java
 │       │   ├── AuthTokenFilter.java
@@ -146,7 +180,6 @@ portfolio-risk-analyzer/
 - Java 17+
 - Maven 3.8+
 - Docker (for local PostgreSQL)
-- A free Finnhub API key from [finnhub.io](https://finnhub.io)
 
 ### Clone & Install (Frontend)
 
@@ -162,8 +195,8 @@ Copy the example below to `.env.local` and fill in your values:
 
 | Variable | Description |
 |----------|-------------|
-| `NEXT_PUBLIC_FINNHUB_API_KEY` | API key from [finnhub.io](https://finnhub.io) |
 | `NEXT_PUBLIC_API_URL` | URL of the running Spring Boot API |
+| `ANTHROPIC_API_KEY` | API key from [anthropic.com](https://anthropic.com) |
 
 ```shell
 # Run development server
@@ -188,7 +221,7 @@ mvn clean install
 mvn spring-boot:run
 ```
 
-Configure `src/main/resources/application.properties` with your database credentials, a 256-bit JWT secret, and your Finnhub API key before running.
+Configure `src/main/resources/application.properties` with your database credentials and a 256-bit JWT secret before running.
 
 API runs on `http://localhost:8081`
 
@@ -202,16 +235,15 @@ These values are set in `application.properties` (backend) and `.env.local` (fro
 |----------|----------|-------------|
 | `SPRING_DATASOURCE_URL` | `application.properties` | PostgreSQL JDBC connection string |
 | `JWT_SECRET` | `application.properties` | 256-bit secret for signing tokens |
-| `FINNHUB_API_KEY` | `application.properties` | Finnhub key for the stock proxy |
-| `NEXT_PUBLIC_FINNHUB_API_KEY` | `.env.local` | Finnhub key for frontend search |
 | `NEXT_PUBLIC_API_URL` | `.env.local` | Backend base URL |
+| `ANTHROPIC_API_KEY` | `.env.local` | Anthropic Claude API key |
 
 ---
 
 ## How it works
 
 1. User inputs stock tickers and share counts via the frontend
-2. Live prices are fetched from Finnhub and sector metadata is classified
+2. Live prices are fetched from Yahoo Finance and sector metadata is classified
 3. The risk engine computes sector weights and a diversification score:
 
 ```javascript
@@ -225,7 +257,9 @@ else riskLevel = 'LOW';
 ```
 
 4. Anthropic Claude generates a plain-English summary of the computed risks
-5. Authenticated users can save and revisit their portfolios at any time
+5. Claude also produces a concrete rebalancing plan with specific trade suggestions
+6. The what-if simulator lets users preview risk changes before making any trades
+7. Authenticated users can save portfolios, view value history, compare portfolios, and set alert thresholds
 
 ---
 
@@ -243,7 +277,7 @@ vercel --prod
 1. Create a new project on [railway.app](https://railway.app)
 2. Add a PostgreSQL database plugin
 3. Deploy the Spring Boot app from the `portfolio-backend` directory
-4. Set `SPRING_DATASOURCE_URL`, `JWT_SECRET`, and `FINNHUB_API_KEY` as environment variables
+4. Set `SPRING_DATASOURCE_URL` and `JWT_SECRET` as environment variables
 
 ---
 
@@ -260,9 +294,6 @@ vercel --prod
 ## Roadmap
 
 - CSV portfolio import
-- Historical performance tracking and backtesting
-- Email alerts for risk threshold breaches
-- Portfolio comparison tool
 - Advanced metrics (Sharpe ratio, beta, alpha)
 - Real-time WebSocket price updates
 - Mobile app (React Native)
@@ -283,7 +314,7 @@ vercel --prod
 ## Attribution
 
 - Built with Next.js, Spring Boot, and PostgreSQL
-- Real-time market data provided by [Finnhub](https://finnhub.io)
+- Real-time market data provided by Yahoo Finance
 - AI insights powered by [Anthropic Claude](https://anthropic.com)
 - **Shreya Prakash** — [GitHub](https://github.com/spraka52) · [LinkedIn](https://linkedin.com/in/shreya-prakash)
 
