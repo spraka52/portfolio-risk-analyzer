@@ -1,8 +1,24 @@
 # Portfolio Risk Analyzer — AI-Powered Portfolio Risk Analysis
 
-[![Next.js](https://img.shields.io/badge/Next.js-14-black?logo=next.js&logoColor=white)](https://nextjs.org/) [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/) [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.2-6DB33F?logo=springboot&logoColor=white)](https://spring.io/projects/spring-boot) [![Java](https://img.shields.io/badge/Java-17-ED8B00?logo=openjdk&logoColor=white)](https://openjdk.org/) [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15-4169E1?logo=postgresql&logoColor=white)](https://www.postgresql.org/) [![Live Demo](https://img.shields.io/badge/demo-live-brightgreen)](https://portfolio-risk-analyzer-seven.vercel.app/) [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![CI](https://github.com/spraka52/portfolio-risk-analyzer/actions/workflows/ci.yml/badge.svg)](https://github.com/spraka52/portfolio-risk-analyzer/actions/workflows/ci.yml) [![Next.js](https://img.shields.io/badge/Next.js-14-black?logo=next.js&logoColor=white)](https://nextjs.org/) [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/) [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.2-6DB33F?logo=springboot&logoColor=white)](https://spring.io/projects/spring-boot) [![Java](https://img.shields.io/badge/Java-17-ED8B00?logo=openjdk&logoColor=white)](https://openjdk.org/) [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15-4169E1?logo=postgresql&logoColor=white)](https://www.postgresql.org/) [![Live Demo](https://img.shields.io/badge/demo-live-brightgreen)](https://portfolio-risk-analyzer-seven.vercel.app/) [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 "A production-ready full-stack application that surfaces hidden concentration risks in investment portfolios using real-time stock data and AI-generated insights."
+
+---
+
+## Live Demo
+
+**[portfolio-risk-analyzer-seven.vercel.app](https://portfolio-risk-analyzer-seven.vercel.app/)**
+
+| Step | What you'll see |
+|------|----------------|
+| 1. Pick a sample portfolio (e.g. "All Tech") | Instant sector breakdown chart |
+| 2. Check the Risk Summary card | HIGH / MEDIUM / LOW badge + diversification score |
+| 3. Read the AI Narrative | Plain-English explanation of your concentration risk |
+| 4. Switch to a "Balanced" portfolio | Watch the score jump and risk level drop to LOW |
+| 5. Sign up → save your own portfolio | Persists across sessions via the Spring Boot API |
+
+> **Tip:** Use the "Create Custom Portfolio" button to enter your own tickers and shares.
 
 ---
 
