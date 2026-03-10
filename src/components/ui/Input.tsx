@@ -39,7 +39,8 @@ export default function Input({
       min={type === 'number' ? '0' : undefined}
       step={type === 'number' ? '1' : undefined}
       style={{
-        
+        width: '100%',
+        boxSizing: 'border-box',
         padding: '0.75rem',
         border: `2px solid ${error ? '#ef4444' : '#e5e7eb'}`,
         borderRadius: '0.5rem',
