@@ -16,6 +16,7 @@ import PortfolioAnalytics from '@/components/PortfolioAnalytics';
 import PortfolioComparison from '@/components/PortfolioComparison';
 import AlertSettings, { loadAlertConfig, shouldTriggerAlert } from '@/components/AlertSettings';
 import { LogOut, User } from 'lucide-react';
+import { AnalysisSkeleton, ErrorMessage } from '@/components/ui/Skeleton';
 
 /** Rebuild portfolio with live prices and recalculate weights */
 function applyLivePrices(portfolio: Portfolio, prices: Record<string, number>): Portfolio {
@@ -45,6 +46,8 @@ export default function Home() {
   const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
   const [saving, setSaving] = useState(false);
   const [editingPortfolio, setEditingPortfolio] = useState<any>(null);
+  const [analysisLoading, setAnalysisLoading] = useState(false);
+  const [analysisError, setAnalysisError] = useState<string | null>(null);
   // analysisKey increments each time the user triggers a fresh analysis → remounts AINarrative
   const [analysisKey, setAnalysisKey] = useState(0);
 
@@ -90,11 +93,19 @@ export default function Home() {
   }, [analysisKey]); // Only trigger on fresh analysis, not on live price ticks
 
   const handlePortfolioSelect = useCallback((portfolio: Portfolio) => {
+    setAnalysisError(null);
+    setAnalysisLoading(true);
     setSelectedPortfolio(portfolio);
-    const metrics = analyzePortfolio(portfolio);
-    setAnalysis(metrics);
     setShowCustomInput(false);
-    setAnalysisKey((k) => k + 1);
+    try {
+      const metrics = analyzePortfolio(portfolio);
+      setAnalysis(metrics);
+      setAnalysisKey((k) => k + 1);
+    } catch {
+      setAnalysisError('Failed to analyze portfolio. Please try again.');
+    } finally {
+      setAnalysisLoading(false);
+    }
   }, []);
 
   const handleSavedPortfolioSelect = (savedPortfolio: any) => {
@@ -313,7 +324,19 @@ export default function Home() {
           </div>
         </div>
 
-        {analysis && (
+        {analysisError && (
+          <div style={{ marginBottom: '2rem' }}>
+            <ErrorMessage message={analysisError} onRetry={() => handlePortfolioSelect(selectedPortfolio)} />
+          </div>
+        )}
+
+        {analysisLoading && (
+          <div style={{ marginBottom: '2rem' }}>
+            <AnalysisSkeleton />
+          </div>
+        )}
+
+        {!analysisLoading && !analysisError && analysis && (
           <>
             {/* ── AI Narrative ── */}
             <div style={{ marginBottom: '2rem' }}>
